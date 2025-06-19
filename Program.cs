@@ -6,12 +6,12 @@ namespace HFYStorySorter
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+            builder.Services.AddHttpClient();
+            builder.Services.AddDbContext<AppDbContenxt>(
+                options => options.UseSqlite("Data Source=hfydata.db"));
 
             var app = builder.Build();
 
@@ -20,13 +20,10 @@ namespace HFYStorySorter
             {
                 app.MapOpenApi();
             }
-
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
-            app.MapControllers();
+            /*app.MapControllers();*/
+            app.MapGet("/", () => "HFY Story Sorter API is running!");
 
             app.Run();
         }
