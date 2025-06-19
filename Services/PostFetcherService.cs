@@ -10,8 +10,9 @@ namespace HFYStorySorter.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly IHttpClientFactory _httpClientFactory;
 
+
+        //https://www.reddit.com/dev/api/
         //todo make the subbreddit url configurable
-        //100 seems to be the limit currently for reddit json endpoint
         private const string SubredditUrl = "https://www.reddit.com/r/hfy/new.json?limit=50";
 
         public PostFetcherService(IServiceProvider serviceProvider,
