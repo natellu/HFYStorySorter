@@ -1,0 +1,6 @@
+@HFYStorySorter_HostAddress = http://localhost:5249
+
+GET {{HFYStorySorter_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
