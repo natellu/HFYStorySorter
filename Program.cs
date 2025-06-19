@@ -1,3 +1,6 @@
+using HFYStorySorter.Data;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace HFYStorySorter
 {
@@ -10,7 +13,7 @@ namespace HFYStorySorter
             builder.Services.AddOpenApi();
 
             builder.Services.AddHttpClient();
-            builder.Services.AddDbContext<AppDbContenxt>(
+            builder.Services.AddDbContext<AppDbContext>(
                 options => options.UseSqlite("Data Source=hfydata.db"));
 
             var app = builder.Build();
