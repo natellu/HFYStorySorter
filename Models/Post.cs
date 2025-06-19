@@ -9,7 +9,7 @@ namespace HFYStorySorter.Models
         public string RedditId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
-        public string AuthorName { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
         public DateTime CreatedUtc { get; set; }
         public bool IsProcessed { get; set; } = false;
     }
