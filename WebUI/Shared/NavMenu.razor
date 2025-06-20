@@ -1,7 +1,8 @@
-﻿<nav>
-    <ul>
-        <li><NavLink href="/">Dashboard</NavLink></li>
-        <li><NavLink href="/config">Config</NavLink></li>
-        <li><NavLink href="/logs">Logs</NavLink></li>
+﻿@using Microsoft.AspNetCore.Components.Routing
+<nav>
+    <ul class="nav-menu">
+        <li><NavLink href="/" class="nav-link" activeclassname="active" Match="NavLinkMatch.All">Dashboard</NavLink></li>
+        <li><NavLink href="/config" class="nav-link" activeclassname="active">Config</NavLink></li>
+        <li><NavLink href="/logs" class="nav-link" activeclassname="active">Logs</NavLink></li>
     </ul>
 </nav>

@@ -1,4 +1,61 @@
-﻿.dashboard-title {
+﻿html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #e8ecef;
+}
+
+.main {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    min-height: 100vh;
+    background-color: #f9fafb; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+}
+
+.sidebar {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+
+/*------------ nav styling --------------*/
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    padding: 10px 20px;
+    background-color: #222831;
+    margin: 0;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #eeeeee;
+    font-weight: 600;
+    padding: 8px 15px;
+    border-radius: 6px;
+    transition: background-color 0.3s, color 0.3s;
+    display: inline-block;
+}
+
+    .nav-link:hover {
+        background-color: #00adb5;
+        color: #222831;
+    }
+
+    .nav-link.active {
+        background-color: #00adb5;
+        color: #222831;
+        box-shadow: 0 2px 8px rgba(0, 173, 181, 0.6);
+    }
+
+
+
+/* ---------------- dashboard styling ------------*/
+.dashboard-title {
     font-size: 2rem;
     color: #333;
     margin-bottom: 20px;
