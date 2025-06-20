@@ -9,32 +9,38 @@ namespace HFYStorySorter.Services
     {
         private readonly ILogger<StorySorterService> _logger;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ServiceStatus _status;
 
-        public StorySorterService(IServiceProvider serviceProvider, ILogger<StorySorterService> logger)
+        public StorySorterService(IServiceProvider serviceProvider, ILogger<StorySorterService> logger, ServiceStatus status)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _status = status;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("StorySorterService starting");
+            _status.IsStorySorterRunning = true;
 
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     await SortUnprocessedPostsAsync(cancellationToken);
+                    //todo make the time configurable
+                    await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error sorting posts");
-                }
-                //todo make the time configurable
-                await Task.Delay(TimeSpan.FromMinutes(5), cancellationToken);
             }
-
-            _logger.LogInformation("StorySorterService is stopping");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sorting posts");
+            }
+            finally
+            {
+                _logger.LogInformation("StorySorterService is stopping");
+                _status.IsStorySorterRunning = false;
+            }
         }
 
         private async Task SortUnprocessedPostsAsync(CancellationToken cancellationToken)

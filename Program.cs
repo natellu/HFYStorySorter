@@ -37,7 +37,7 @@ namespace HFYStorySorter
                 options => options.UseSqlite("Data Source=hfydata.db"));
             builder.Services.AddHostedService<PostFetcherService>();
             builder.Services.AddHostedService<StorySorterService>();
-
+            builder.Services.AddSingleton<ServiceStatus>();
 
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();

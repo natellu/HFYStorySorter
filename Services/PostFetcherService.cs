@@ -9,6 +9,7 @@ namespace HFYStorySorter.Services
         private readonly ILogger<PostFetcherService> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ServiceStatus _status;
 
 
         //https://www.reddit.com/dev/api/
@@ -17,32 +18,39 @@ namespace HFYStorySorter.Services
 
         public PostFetcherService(IServiceProvider serviceProvider,
                               ILogger<PostFetcherService> logger,
-                              IHttpClientFactory httpClientFactory)
+                              IHttpClientFactory httpClientFactory,
+                              ServiceStatus status)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _status = status;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("PostFetcherService running");
-            while (!stoppingToken.IsCancellationRequested)
+            _status.IsPostFetcherRunning = true;
+
+            try
             {
-                try
+                while (!stoppingToken.IsCancellationRequested)
                 {
                     await FetchNewPostsAsync(stoppingToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error fetching new posts");
-                }
 
-                //todo make the time configurable
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    //todo make the time configurable
+                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                }
             }
-
-            _logger.LogInformation("PostFetcherService is stopping");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching new posts");
+            }
+            finally
+            {
+                _logger.LogInformation("PostFetcherService is stopping");
+                _status.IsPostFetcherRunning = false;
+            }
         }
 
         private async Task FetchNewPostsAsync(CancellationToken cancellationToken)

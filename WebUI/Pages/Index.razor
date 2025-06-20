@@ -1,4 +1,5 @@
 ﻿@page "/"
+@inject HFYStorySorter.Services.ServiceStatus ServiceStatus
 @inject HFYStorySorter.Data.AppDbContext DbContext
 
 <h1 class="dashboard-title">HFYStorySorter Dashboard</h1>
@@ -26,15 +27,33 @@ else
             <h3>Total Chapters</h3>
             <p>@totalChapters</p>
         </div>
+        <div class="dashboard-card">
+            <h3>PostFetcher Service</h3>
+            <p class="@GetStatusClass(ServiceStatus.IsPostFetcherRunning)">
+                @(ServiceStatus.IsPostFetcherRunning ? "Running" : "Stopped")
+            </p>
+        </div>
+        <div class="dashboard-card">
+            <h3>StorySorter Service</h3>
+            <p class="@GetStatusClass(ServiceStatus.IsStorySorterRunning)">
+                @(ServiceStatus.IsStorySorterRunning ? "Running" : "Stopped")
+            </p>
+        </div>
     </div>
 
     <h2 class="chapter-header">Chapters per Story</h2>
     <ul class="story-list">
-        @foreach (var item in chaptersPerStory)
+        @foreach (var item in PagedChaptersPerStory)
         {
             <li><strong>@item.StoryName:</strong> @item.ChapterCount chapters</li>
         }
     </ul>
+
+    <div class="pagination">
+        <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)">Previous</button>
+        <span>Page @currentPage of @totalPages</span>
+        <button @onclick="NextPage" disabled="@(!CanGoNext)">Next</button>
+    </div>
 }
 
 @code {
@@ -42,32 +61,80 @@ else
     private int unprocessedPosts;
     private int totalStories;
     private int totalChapters;
-
-    private List<(string StoryName, int ChapterCount)> chaptersPerStory = new();
-
     private bool isLoading = true;
 
+    private bool isPostFetcherRunning;
+    private bool isStorySorterRunning;
+
+    private List<(string StoryName, int ChapterCount)> chaptersPerStory = new();
+    private Timer? statusTimer;
+
+    private int currentPage = 1;
+    private int pageSize = 50;
+    private int totalPages => (int)Math.Ceiling((double)chaptersPerStory.Count / pageSize);
+
+    private IEnumerable<(string StoryName, int ChapterCount)> PagedChaptersPerStory =>
+        chaptersPerStory.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+
+
     protected override async Task OnInitializedAsync()
+    {
+        await LoadDbDataAsync();
+
+        statusTimer = new Timer(_ =>
+        {
+            isPostFetcherRunning = ServiceStatus.IsPostFetcherRunning;
+            isStorySorterRunning = ServiceStatus.IsStorySorterRunning;
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    }
+
+    private async Task LoadDbDataAsync()
     {
         totalPosts = await DbContext.Posts.CountAsync();
         unprocessedPosts = await DbContext.Posts.CountAsync(p => !p.IsProcessed);
         totalStories = await DbContext.Stories.CountAsync();
         totalChapters = await DbContext.Chapters.CountAsync();
 
-        chaptersPerStory = await DbContext.Stories
-            .Select(s => new
-            {
-                s.StoryName,
-                ChapterCount = s.Chapters.Count
-            })
-            .OrderByDescending(x => x.ChapterCount)
-            .AsNoTracking()
-            .ToListAsync()
-            .ContinueWith(t => t.Result
-                .Select(x => (x.StoryName, x.ChapterCount))
-                .ToList()
-            );
+        var queryResult = await DbContext.Stories
+        .Select(s => new
+        {
+            s.StoryName,
+            ChapterCount = s.Chapters.Count
+        })
+        .OrderByDescending(x => x.ChapterCount)
+        .AsNoTracking()
+        .ToListAsync();
+
+        chaptersPerStory = queryResult
+            .Select(x => (x.StoryName, x.ChapterCount))
+            .ToList();
+
+        isPostFetcherRunning = ServiceStatus.IsPostFetcherRunning;
+        isStorySorterRunning = ServiceStatus.IsStorySorterRunning;
 
         isLoading = false;
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext) currentPage++;
+    }
+
+    private void PreviousPage()
+    {
+        if (CanGoPrevious) currentPage--;
+    }
+
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
+
+    private string GetStatusClass(bool isRunning) =>
+        isRunning ? "status-running" : "status-stopped";
+
+    public void Dispose()
+    {
+        statusTimer?.Dispose();
     }
 }
