@@ -18,7 +18,16 @@ namespace HFYStorySorter
                 .CreateLogger();
 
 
-            var builder = WebApplication.CreateBuilder(args);
+
+            //wwwroot is in the webui folder
+            var options = new WebApplicationOptions
+            {
+                ContentRootPath = Directory.GetCurrentDirectory(),
+                WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "WebUI", "wwwroot")
+            };
+
+            var builder = WebApplication.CreateBuilder(options);
+
             builder.Host.UseSerilog();
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
@@ -46,6 +55,7 @@ namespace HFYStorySorter
 
             app.MapRazorPages();
             app.MapBlazorHub();
+
             app.MapFallbackToPage("/_Host");
 
             /*app.UseHttpsRedirection();

@@ -1,0 +1,21 @@
+@page "/"
+@namespace WebUI.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+
+@* this file needs to live here for how blazor server handles routing *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title> StorySorter Dashboard</title>
+    <base href="/"/>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+    <app>
+        <component type="typeof(HFYStorySorter.WebUI.App)" render-mode="ServerPrerendered" />
+    </app>
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>

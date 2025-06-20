@@ -1,0 +1,6 @@
+﻿@page "/config"
+@inject IConfiguration Configuration
+
+<h3>Configuration</h3>
+<p>Reddit URL: @Configuration["Reddit:Url"]</p>
+<p>Fetch Interval (mins): @Configuration["Service:IntervalMinutes"]</p>
