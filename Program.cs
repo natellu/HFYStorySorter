@@ -28,6 +28,7 @@ namespace HFYStorySorter
             builder.Services.AddDbContext<AppDbContext>(
                 options => options.UseSqlite("Data Source=hfydata.db"));
             builder.Services.AddHostedService<PostFetcherService>();
+            builder.Services.AddHostedService<StorySorterService>();
 
             var app = builder.Build();
 
