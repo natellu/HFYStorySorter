@@ -42,18 +42,8 @@ else
     </div>
 
     <h2 class="chapter-header">Chapters per Story</h2>
-    <ul class="story-list">
-        @foreach (var item in PagedChaptersPerStory)
-        {
-            <li><strong>@item.StoryName:</strong> @item.ChapterCount chapters</li>
-        }
-    </ul>
 
-    <div class="pagination">
-        <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)">Previous</button>
-        <span>Page @currentPage of @totalPages</span>
-        <button @onclick="NextPage" disabled="@(!CanGoNext)">Next</button>
-    </div>
+    <StoryList />
 }
 
 @code {
@@ -68,13 +58,6 @@ else
 
     private List<(string StoryName, int ChapterCount)> chaptersPerStory = new();
     private Timer? statusTimer;
-
-    private int currentPage = 1;
-    private int pageSize = 50;
-    private int totalPages => (int)Math.Ceiling((double)chaptersPerStory.Count / pageSize);
-
-    private IEnumerable<(string StoryName, int ChapterCount)> PagedChaptersPerStory =>
-        chaptersPerStory.Skip((currentPage - 1) * pageSize).Take(pageSize);
 
 
 
@@ -97,38 +80,11 @@ else
         totalStories = await DbContext.Stories.CountAsync();
         totalChapters = await DbContext.Chapters.CountAsync();
 
-        var queryResult = await DbContext.Stories
-        .Select(s => new
-        {
-            s.StoryName,
-            ChapterCount = s.Chapters.Count
-        })
-        .OrderByDescending(x => x.ChapterCount)
-        .AsNoTracking()
-        .ToListAsync();
-
-        chaptersPerStory = queryResult
-            .Select(x => (x.StoryName, x.ChapterCount))
-            .ToList();
-
         isPostFetcherRunning = ServiceStatus.IsPostFetcherRunning;
         isStorySorterRunning = ServiceStatus.IsStorySorterRunning;
 
         isLoading = false;
     }
-
-    private void NextPage()
-    {
-        if (CanGoNext) currentPage++;
-    }
-
-    private void PreviousPage()
-    {
-        if (CanGoPrevious) currentPage--;
-    }
-
-    private bool CanGoNext => currentPage < totalPages;
-    private bool CanGoPrevious => currentPage > 1;
 
     private string GetStatusClass(bool isRunning) =>
         isRunning ? "status-running" : "status-stopped";

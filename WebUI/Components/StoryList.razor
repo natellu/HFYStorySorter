@@ -1,0 +1,124 @@
+﻿@inject HFYStorySorter.Data.AppDbContext DbContext
+
+<div>
+    <input type="text"
+           placeholder="Search stories..."
+           @oninput="OnSearchInput"
+           value="@searchTerm"
+           class="search-input" />
+
+    <ul class="story-list">
+        @foreach (var item in FilteredPagedStories)
+        {
+            <li><strong>@item.StoryName:</strong> @item.ChapterCount chapters</li>
+        }
+    </ul>
+
+    <div class="pagination">
+        <button @onclick="PreviousPage" disabled="@(!CanGoPrevious)">Previous</button>
+        <span>Page @currentPage of @totalPages</span>
+        <button @onclick="NextPage" disabled="@(!CanGoNext)">Next</button>
+    </div>
+</div>
+
+
+@code {
+    private string searchTerm = string.Empty;
+
+    private List<(string StoryName, int ChapterCount)> chaptersPerStory = new();
+    private List<(string StoryName, int ChapterCount)> filteredStories = new();
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+
+    private int totalPages => (int)Math.Ceiling((double)filteredStories.Count / pageSize);
+
+    private IEnumerable<(string StoryName, int ChapterCount)> FilteredPagedStories =>
+        filteredStories
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize);
+
+    private System.Timers.Timer? debounceTimer;
+
+
+    protected override async Task OnInitializedAsync(){
+        await LoadDbDataAsync();
+    }
+
+    private async Task LoadDbDataAsync()
+    {
+        var storyData = await DbContext.Stories
+        .Select(s => new
+        {
+            s.StoryName,
+            ChapterCount = s.Chapters.Count
+        })
+        .OrderByDescending(x => x.ChapterCount)
+        .AsNoTracking()
+        .ToListAsync();
+
+        chaptersPerStory = storyData
+            .Select(x => (x.StoryName, x.ChapterCount))
+            .ToList();
+
+        filteredStories = new List<(string StoryName, int ChapterCount)>(chaptersPerStory);
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+
+        debounceTimer = new System.Timers.Timer(300);
+        debounceTimer.Elapsed += (s, args) =>
+        {
+            debounceTimer.Stop();
+            debounceTimer.Dispose();
+
+            InvokeAsync(() =>
+            {
+                ApplySearchFilter();
+                StateHasChanged();
+            });
+        };
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
+    }
+
+    private void ApplySearchFilter()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredStories = new List<(string StoryName, int ChapterCount)>(chaptersPerStory);
+        }
+        else
+        {
+            var lower = searchTerm.Trim().ToLowerInvariant();
+            filteredStories = chaptersPerStory
+                .Where(s => s.StoryName.ToLowerInvariant().Contains(lower))
+                .ToList();
+        }
+        currentPage = 1;
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext) currentPage++;
+    }
+
+    private void PreviousPage()
+    {
+        if (CanGoPrevious) currentPage--;
+    }
+
+    private bool CanGoNext => currentPage < totalPages;
+    private bool CanGoPrevious => currentPage > 1;
+
+    public void Dispose()
+    {
+        debounceTimer?.Dispose();
+    }
+
+}
