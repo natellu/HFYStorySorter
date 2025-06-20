@@ -3,7 +3,6 @@ using HFYStorySorter.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-
 namespace HFYStorySorter
 {
     public class Program
@@ -30,6 +29,10 @@ namespace HFYStorySorter
             builder.Services.AddHostedService<PostFetcherService>();
             builder.Services.AddHostedService<StorySorterService>();
 
+
+            builder.Services.AddRazorPages();
+            builder.Services.AddServerSideBlazor();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -37,10 +40,17 @@ namespace HFYStorySorter
             {
                 app.MapOpenApi();
             }
-            app.UseHttpsRedirection();
+
+            app.UseStaticFiles();
+            app.UseRouting();
+
+            app.MapRazorPages();
+            app.MapBlazorHub();
+            app.MapFallbackToPage("/_Host");
+
+            /*app.UseHttpsRedirection();
             app.UseAuthorization();
-            /*app.MapControllers();*/
-            app.MapGet("/", () => "HFY Story Sorter API is running!");
+            app.MapGet("/", () => "HFY Story Sorter API is running!");*/
 
             app.Run();
         }
