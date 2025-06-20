@@ -1,4 +1,73 @@
 ﻿@page "/"
+@inject HFYStorySorter.Data.AppDbContext DbContext
 
-<h1>StorySorter Dashboard</h1>
-<p>Status: Running</p>
+<h1 class="dashboard-title">HFYStorySorter Dashboard</h1>
+
+@if (isLoading)
+{
+    <p class="loading">Loading data...</p>
+}
+else
+{
+    <div class="dashboard-container">
+        <div class="dashboard-card">
+            <h3>Total Posts</h3>
+            <p>@totalPosts</p>
+        </div>
+        <div class="dashboard-card">
+            <h3>Unprocessed Posts</h3>
+            <p>@unprocessedPosts</p>
+        </div>
+        <div class="dashboard-card">
+            <h3>Total Stories</h3>
+            <p>@totalStories</p>
+        </div>
+        <div class="dashboard-card">
+            <h3>Total Chapters</h3>
+            <p>@totalChapters</p>
+        </div>
+    </div>
+
+    <h2 class="chapter-header">Chapters per Story</h2>
+    <ul class="story-list">
+        @foreach (var item in chaptersPerStory)
+        {
+            <li><strong>@item.StoryName:</strong> @item.ChapterCount chapters</li>
+        }
+    </ul>
+}
+
+@code {
+    private int totalPosts;
+    private int unprocessedPosts;
+    private int totalStories;
+    private int totalChapters;
+
+    private List<(string StoryName, int ChapterCount)> chaptersPerStory = new();
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalPosts = await DbContext.Posts.CountAsync();
+        unprocessedPosts = await DbContext.Posts.CountAsync(p => !p.IsProcessed);
+        totalStories = await DbContext.Stories.CountAsync();
+        totalChapters = await DbContext.Chapters.CountAsync();
+
+        chaptersPerStory = await DbContext.Stories
+            .Select(s => new
+            {
+                s.StoryName,
+                ChapterCount = s.Chapters.Count
+            })
+            .OrderByDescending(x => x.ChapterCount)
+            .AsNoTracking()
+            .ToListAsync()
+            .ContinueWith(t => t.Result
+                .Select(x => (x.StoryName, x.ChapterCount))
+                .ToList()
+            );
+
+        isLoading = false;
+    }
+}
