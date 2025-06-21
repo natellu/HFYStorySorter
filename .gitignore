@@ -1,5 +1,8 @@
 .vs
 bin
 obj
-hfydata.db
 logs
+
+hfydata.db
+hfydata.db-shm
+hfydata.db-wal
