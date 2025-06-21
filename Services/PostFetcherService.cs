@@ -38,6 +38,7 @@ namespace HFYStorySorter.Services
                 {
                     await FetchNewPostsAsync(stoppingToken);
 
+                    _logger.LogInformation("PostFetcherService will run next at {Time}", DateTime.Now.AddMinutes(5));
                     //todo make the time configurable
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                 }
