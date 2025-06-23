@@ -1,5 +1,8 @@
 using HFYStorySorter.Data;
+using HFYStorySorter.Logging;
 using HFYStorySorter.Services;
+using HFYStorySorter.WebUI.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -9,17 +12,6 @@ namespace HFYStorySorter
     {
         public static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning) //suppress ef logs
-                .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
-                .MinimumLevel.Information()
-                .WriteTo.Console()
-                .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
-                .CreateLogger();
-
-
-
-            //wwwroot is in the webui folder
             var options = new WebApplicationOptions
             {
                 ContentRootPath = Directory.GetCurrentDirectory(),
@@ -28,7 +20,20 @@ namespace HFYStorySorter
 
             var builder = WebApplication.CreateBuilder(options);
 
-            builder.Host.UseSerilog();
+            builder.Services.AddSignalR();
+            builder.Services.AddSingleton<SignalRLogSink>();
+
+            builder.Host.UseSerilog((context, services, configuration) =>
+            {
+                configuration
+                    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+                    .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+                    .MinimumLevel.Information()
+                    .WriteTo.Console()
+                    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+                    .WriteTo.Sink(services.GetRequiredService<SignalRLogSink>());
+            });
+
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
 
@@ -43,8 +48,11 @@ namespace HFYStorySorter
             builder.Services.AddServerSideBlazor();
 
             var app = builder.Build();
+            var hubContext = app.Services.GetRequiredService<IHubContext<LogHub>>();
+            SignalRLogSink.Configure(hubContext);
 
-            // Configure the HTTP request pipeline.
+            app.MapHub<LogHub>("/loghub");
+
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
@@ -55,12 +63,7 @@ namespace HFYStorySorter
 
             app.MapRazorPages();
             app.MapBlazorHub();
-
             app.MapFallbackToPage("/_Host");
-
-            /*app.UseHttpsRedirection();
-            app.UseAuthorization();
-            app.MapGet("/", () => "HFY Story Sorter API is running!");*/
 
             app.Run();
         }

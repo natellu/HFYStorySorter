@@ -1,0 +1,87 @@
+﻿@page "/logs"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<h3>Logs</h3>
+
+<div class="log-controls">
+    <button @onclick="TogglePause">@((isPaused ? "Resume" : "Pause"))</button>
+    <button @onclick="ClearLogs">Clear</button>
+
+    <select @onchange="OnLevelFilterChanged">
+        <option value="">All Levels</option>
+        <option value="INFO">INFO</option>
+        <option value="WARNING">WARNING</option>
+        <option value="ERROR">ERROR</option>
+    </select>
+
+    <input placeholder="Search keyword..." @bind="searchKeyword" @bind:event="oninput" />
+</div>
+
+<div class="log-container" @ref="logContainer">
+    @foreach (var log in FilteredLogs)
+    {
+        <div class="log-line">@log</div>
+    }
+</div>
+
+@code {
+    private HubConnection hubConnection;
+    private List<string> logs = new();
+    private bool isPaused = false;
+    private ElementReference logContainer;
+
+    private string selectedLevel = "";
+    private string searchKeyword = "";
+
+    private bool shouldScroll = false;
+
+    private IEnumerable<string> FilteredLogs => logs
+       .Where(log =>
+           (string.IsNullOrEmpty(selectedLevel) || log.Contains(selectedLevel, StringComparison.OrdinalIgnoreCase)) &&
+           (string.IsNullOrEmpty(searchKeyword) || log.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase))
+       );
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/loghub"))
+            .Build();
+
+        hubConnection.On<string>("ReceiveLog", async (log) =>
+        {
+            await InvokeAsync(() =>
+             {
+                 logs.Add(log);
+
+                 if (!isPaused)
+                 {
+                     shouldScroll = true;
+                     StateHasChanged(); // request re-render on UI thread
+                 }
+             });
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shouldScroll)
+        {
+            shouldScroll = false;
+            await JS.InvokeVoidAsync("scrollToBottom", logContainer);
+        }
+    }
+
+    private void TogglePause() => isPaused = !isPaused;
+
+    private void ClearLogs() => logs.Clear();
+
+    private void OnLevelFilterChanged(ChangeEventArgs e)
+    {
+        selectedLevel = e.Value?.ToString() ?? "";
+    }
+}
