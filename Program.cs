@@ -12,6 +12,7 @@ namespace HFYStorySorter
     {
         public static void Main(string[] args)
         {
+            //wwwroot location
             var options = new WebApplicationOptions
             {
                 ContentRootPath = Directory.GetCurrentDirectory(),
@@ -20,9 +21,9 @@ namespace HFYStorySorter
 
             var builder = WebApplication.CreateBuilder(options);
 
-            builder.Services.AddSignalR();
-            builder.Services.AddSingleton<SignalRLogSink>();
 
+            //logging
+            builder.Services.AddSingleton<SignalRLogSink>();
             builder.Host.UseSerilog((context, services, configuration) =>
             {
                 configuration
@@ -34,24 +35,30 @@ namespace HFYStorySorter
                     .WriteTo.Sink(services.GetRequiredService<SignalRLogSink>());
             });
 
+            //services
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
 
             builder.Services.AddHttpClient();
-            builder.Services.AddDbContext<AppDbContext>(
-                options => options.UseSqlite("Data Source=hfydata.db"));
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite("Data Source=hfydata.db"));
+
             builder.Services.AddHostedService<PostFetcherService>();
             builder.Services.AddHostedService<StorySorterService>();
             builder.Services.AddSingleton<ServiceStatus>();
 
+            //webui
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
 
+
+            builder.Services.AddSignalR();
+
             var app = builder.Build();
+
             var hubContext = app.Services.GetRequiredService<IHubContext<LogHub>>();
             SignalRLogSink.Configure(hubContext);
-
-            app.MapHub<LogHub>("/loghub");
 
             if (app.Environment.IsDevelopment())
             {
@@ -61,9 +68,13 @@ namespace HFYStorySorter
             app.UseStaticFiles();
             app.UseRouting();
 
+            // webui endpoints
             app.MapRazorPages();
             app.MapBlazorHub();
             app.MapFallbackToPage("/_Host");
+
+            // signalr endpoint
+            app.MapHub<LogHub>("/loghub");
 
             app.Run();
         }
