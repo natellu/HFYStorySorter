@@ -4,7 +4,9 @@ using HFYStorySorter.Services;
 using HFYStorySorter.WebUI.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Text;
 
 namespace HFYStorySorter
 {
@@ -55,6 +57,23 @@ namespace HFYStorySorter
 
             builder.Services.AddSignalR();
 
+
+
+            builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
+                {
+                    var secret = builder.Configuration["Jwt:Secret"];
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret!))
+                    };
+                });
+
+            builder.Services.AddAuthorization();
+
             var app = builder.Build();
 
             var hubContext = app.Services.GetRequiredService<IHubContext<LogHub>>();
@@ -76,6 +95,8 @@ namespace HFYStorySorter
             // signalr endpoint
             app.MapHub<LogHub>("/loghub");
 
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.MapControllers();
             app.Run();
         }
