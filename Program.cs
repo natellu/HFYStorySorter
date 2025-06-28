@@ -76,6 +76,7 @@ namespace HFYStorySorter
             // signalr endpoint
             app.MapHub<LogHub>("/loghub");
 
+            app.MapControllers();
             app.Run();
         }
     }
